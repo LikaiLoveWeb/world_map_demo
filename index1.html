@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>天地图--test1</title>
+		<link rel="stylesheet" href="css/index1.css" />
+		<script type="text/javascript" src="http://cdn.bootcss.com/jquery/2.2.0/jquery.js"></script>
+		<script type="text/javascript" src="http://api.tianditu.com/api?v=4.0"></script> 
+	</head>
+	<script type="text/javascript">
+		var map, zoom = 12,localsearch;
+	function onLoad() {
+		var dwindowH = $(window).height();
+		$('#mapDiv').css('height',dwindowH-75-21);
+			 //初始化地图对象 
+            map = new T.Map("mapDiv"); 
+             //设置显示地图的中心点和级别 
+            map.centerAndZoom(new T.LngLat(116.40969, 39.89945), zoom);
+            
+       var config = { 
+			pageCapacity:10,	//每页显示的数量 
+			onSearchComplete:localSearchResult	//接收数据的回调函数 
+		}; 
+		//创建搜索对象 
+		localsearch = new T.LocalSearch(map,config);
+	}
+	
+	var searchFnS = '';
+	function searchFn(){
+		var selectStr = $('#selectGps').val();
+		if(searchFnS != selectStr){
+			localsearch.search(selectStr)
+			//console.log(localsearch);
+			//selectStr = $('#selectGps').val();
+			console.log(selectStr);
+		}
+		searchFnS = selectStr;
+		}
+		
+		
+	function localSearchResult(result)  
+	{  
+		
+		  
+		//根据返回类型解析搜索结果  
+		switch(parseInt(result.getResultType()))  
+		{  
+			case 1:  
+				//解析点数据结果  
+				pois(result.getPois());  
+				break;  
+			case 2:  
+				//解析推荐城市  
+				statistics(result.getStatistics());  
+				break;  
+			case 3:  
+				//解析行政区划边界  
+				area(result.getArea());  
+				break;  
+		}  
+	}  
+	  
+
+	//解析点数据结果  
+	function pois(obj)  
+	{  
+		if(obj)  
+		{  
+			//显示搜索列表  
+			var divMarker = document.createElement("div");  
+			//坐标数组，设置最佳比例尺时会用到  
+			var zoomArr = [];  
+			for(var i=0;i<obj.length;i++)  
+			{  
+				//闭包  
+				(function(i){  
+					//名称  
+					var name = obj[i].name;  
+					//地址  
+					var address = obj[i].address;  
+					//坐标  
+					var lnglatArr = obj[i].lonlat.split(" ");  
+					var lnglat = new T.LngLat(lnglatArr[0],lnglatArr[1]);  
+					  
+					var winHtml = "名称:"+ name +"<br/>地址:"+address; 
+					  
+					//创建标注对象  
+					var marker = new T.Marker(lnglat);  
+					//地图上添加标注点  
+					map.addOverLay(marker);  
+					//注册标注点的点击事件  
+					var markerInfoWin = new T.InfoWindow(winHtml,{autoPan:true}); 
+					marker.addEventListener("click", function(){ 
+						marker.openInfoWindow(markerInfoWin); 
+					}); 
+					 
+					zoomArr.push(lnglat);  
+					  
+					//在页面上显示搜索的列表  
+					var a = document.createElement("a");  
+					a.href = "javascript://";  
+					a.innerHTML = name;  
+					a.onclick = function(){  
+						showPosition(marker,winHtml);  
+					}  
+					divMarker.appendChild(document.createTextNode((i+1)+"."));  
+					divMarker.appendChild(a);  
+					divMarker.appendChild(document.createElement("br"));  
+				})(i);  
+			}  
+			//显示地图的最佳级别  
+			map.setViewport(zoomArr);  
+			//显示搜索结果  
+			divMarker.appendChild(document.createTextNode('共'+localsearch.getCountNumber()+'条记录，分'+localsearch.getCountPage()+'页,当前第'+localsearch.getPageIndex()+'页'));  
+			document.getElementById("searchDiv").appendChild(divMarker);  
+			document.getElementById("resultDiv").style.display = "block";  
+		}  
+	}  
+	  
+	//显示信息框  
+	function showPosition(marker,winHtml)  
+	{  
+		var markerInfoWin = new T.InfoWindow(winHtml,{autoPan:true}); 
+		marker.openInfoWindow(markerInfoWin); 
+	}  
+	
+	//解析行政区划边界  
+	function area(obj)  
+	{  
+		if(obj)  
+		{  
+			//坐标数组，设置最佳比例尺时会用到  
+			var pointsArr = [];  
+			var points = obj.points;  
+			for(var i=0;i<points.length;i++)  
+			{  
+				var regionLngLats = [];  
+				var regionArr = points[i].region.split(",");  
+				for(var m=0;m<regionArr.length;m++)  
+				{  
+					var lnglatArr = regionArr[m].split(" ");  
+					var lnglat = new T.LngLat(lnglatArr[0],lnglatArr[1]);  
+					regionLngLats.push(lnglat);  
+					pointsArr.push(lnglat);  
+				}  
+				//创建线对象  
+				var line = new T.Polyline(regionLngLats,{color:"blue", weight:3, opacity:1, lineStyle:"dashed"});  
+				//向地图上添加线  
+				map.addOverLay(line);  
+			}  
+			//显示最佳比例尺  
+			map.setViewport(pointsArr);  
+		}  
+	}  
+  
+		
+</script>
+
+	<body onload="onLoad()">
+		<div id="header">
+			<ul class="header_left">
+				<li>手机地图</li>
+				<li>资源中心</li>
+				<li>综合服务</li>
+				<li>意见反馈</li>
+				<li>二次开发</li>
+				<li>更新日志</li>
+				<li>帮助</li>
+			</ul>
+			<ul class="header_right">
+				<li>首页</li>
+				<li>登录</li>
+				<li>注册</li>
+			</ul>
+		</div>
+		<div id="banner" class="banner">
+			<div class="logo">
+				天地图.浙江
+			</div>
+			<div class="banner_input">
+				<input type="text" name="" value="" placeholder="" class="bannerText" />
+				<input type="submit" name="" value="" class="icion" />
+			</div>
+			<div class="identifier">
+				<span>
+					天地图浙江V7.0公测版
+				</span>
+			</div>
+		</div>
+		
+		<div class="box" >
+			<div class="box_nav">
+				<select name="" class="selectGps" id="selectGps" onclick="searchFn()"> 
+				<option value="长兴县">长兴县</option> 
+				<option value="杭州市">杭州市</option> 
+				</select> 
+				<div class="weather">
+					<span>良</span>
+					<span>70</span>
+				</div>
+				<div class="tool">
+					<select name="" class="Map selectGps" value="地图"> 
+					<option value="0">地图</option> 
+					<option value="1">影像</option> 
+					<option value="2">三维</option> 
+					<option value="3">规划</option> 
+					</select>
+					<select name="" class="query selectGps" value="查询">
+					<option value="-1">查询</option> 
+					<option value="0">土地</option> 
+					<option value="1">房屋</option> 
+					<option value="2">人口</option> 
+					<option value="3">交易</option> 
+					</select>
+					<select name="" class="Monitor selectGps" value="监测"> 
+					<option value="-1">监测</option> 
+					<option value="0">异动监测</option> 
+					<option value="1">压力测试</option> 
+					<option value="2">舆情监察</option> 
+					</select>
+					<select name="" class="tool_gj selectGps" value="工具">
+					<option value="-1">工具</option> 
+					<option value="0">统计</option> 
+					<option value="1">圈选区域</option> 
+					<option value="2">参数设置</option>
+					</select>
+				</div>
+			</div>
+			<div id="mapDiv">
+				
+			</div>	
+			<div class="map_left">
+				<ul class="map_left_ul">
+					<li><a href="javascript:;">分类</a></li>
+					<li class="liActive"><a href="javascript:;">收藏</a></li>
+				</ul>
+				<div class="map_left_box" id="map_left_box2">
+					资料待填充！
+				</div>
+				<div class="map_left_box" id="map_left_box1">
+					<div style="display: inline-block;width: 30%;vertical-align: top;">
+						性质：
+					</div>
+					<form action="" method="get" style="display: inline-block;width: 60%;"> 
+					<label><input name="Fruit" type="checkbox" value="" />工业 </label> 
+					<label><input name="Fruit" type="checkbox" value="" />集体 </label> 
+					<label><input name="Fruit" type="checkbox" value="" />景区 </label> 
+					<label><input name="Fruit" type="checkbox" value="" />居住</label> 
+					<label><input name="Fruit" type="checkbox" value="" />商业 </label> 
+					<label><input name="Fruit" type="checkbox" value="" />商办 </label> 
+					<label><input name="Fruit" type="checkbox" value="" />其他</label> 
+					</form> 
+					<div style="width: 100%;height: 10px;"></div>
+					<div style="display: inline-block;width: 30%;vertical-align: top;">
+						状态：
+					</div>
+					<form action="" method="get" style="display: inline-block;width: 60%;"> 
+					<label><input name="Fruit" type="checkbox" value="" />规划 </label> 
+					<label><input name="Fruit" type="checkbox" value="" />征拆 </label> 
+					<label><input name="Fruit" type="checkbox" value="" />挂牌 </label> 
+					<label><input name="Fruit" type="checkbox" value="" />成交</label> 
+					</form> 
+					<div style="width: 100%;height: 10px;"></div>
+					<div style="display: inline-block;width: 30%;vertical-align: top;">
+						容积率：
+					</div>
+					<form action="" method="get" style="display: inline-block;width: 60%;"> 
+						<input type="text" name="" value="" class="input_text_1" /> -
+						<input type="text" name="" value="" class="input_text_1" />
+					</form> 
+					<div style="width: 100%;height: 10px;"></div>
+					<div style="display: inline-block;width: 30%;vertical-align: top;">
+						总建面积：
+					</div>
+					<form action="" method="get" style="display: inline-block;width: 60%;"> 
+						<input type="text" name="" value="" class="input_text_1" /> -
+						<input type="text" name="" value="" class="input_text_1" />
+					</form> 
+					<div style="width: 100%;height: 10px;"></div>
+					<div style="display: inline-block;width: 30%;vertical-align: top;">
+						成交总价：
+					</div>
+					<form action="" method="get" style="display: inline-block;width: 60%;"> 
+						<input type="text" name="" value="" class="input_text_1" /> -
+						<input type="text" name="" value="" class="input_text_1" />
+					</form> 
+					<div style="width: 100%;height: 10px;"></div>
+					<div style="display: inline-block;width: 30%;vertical-align: top;">
+						成交楼面积：
+					</div>
+					<form action="" method="get" style="display: inline-block;width: 60%;"> 
+						<input type="text" name="" value="" class="input_text_1" /> -
+						<input type="text" name="" value="" class="input_text_1" />
+					</form> 
+					<div style="width: 100%;height: 10px;"></div>
+					<div style="display: inline-block;width: 30%;vertical-align: top;">
+						溢价率：
+					</div>
+					<form action="" method="get" style="display: inline-block;width: 60%;"> 
+						<input type="text" name="" value="" class="input_text_1" /> -
+						<input type="text" name="" value="" class="input_text_1" />
+					</form> 
+				</div>
+
+			</div>
+		</div>
+	</body>
+</html>
+<script type="text/javascript">
+	$(function(){
+		$('.map_left_ul li').click(function(){
+			var index = $(this).index();
+			$('.map_left_ul li').removeClass('liActive').eq(index).addClass('liActive');
+			if(index == 0){
+				$('#map_left_box2').css('display','block');
+				$('#map_left_box1').css('display','none');
+			}else if(index == 1){
+				$('#map_left_box1').css('display','block');
+				$('#map_left_box2').css('display','none');
+			}else{
+				alert('不可能！你点错了，刷新重新来。')
+			}
+		})
+	})
+</script>
